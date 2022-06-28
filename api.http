@@ -1,0 +1,88 @@
+@hostname = https://rest-prod.immedia-semi.com
+@email = {{$dotenv email}}
+@password = {{$dotenv password}}
+@unique_id = {{$dotenv unique_id}}
+
+# 1. Login to get an Auth Token and have a PIN sent to your device
+# @name login
+POST {{hostname}}/api/v5/account/login
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "password": "{{password}}",
+    "unique_id": "{{unique_id}}"
+}
+
+###
+
+@authToken = {{login.response.body.auth.token}}
+@AccountID = {{login.response.body.account.account_id}}
+@ClientID = {{login.response.body.account.client_id}}
+@tier = {{login.response.body.account.tier}}
+
+@tiered-hostname = https://rest-{{tier}}.immedia-semi.com
+
+# 2. If the login response above requires a verification, you will receive
+# a PIN via SMS or email. Enter the PIN below and send the request.
+# If a Response 200 is received, you can send the requests below
+# that send just the authToken.
+#
+# @name pinverify
+POST {{tiered-hostname}}/api/v4/account/{{AccountID}}/client/{{ClientID}}/pin/verify
+Content-Type: application/json
+token-auth: {{authToken}}
+
+{
+  "pin": ""
+}
+
+# 3. Send this request to get details about your devices
+###
+# @name homescreen
+GET {{tiered-hostname}}/api/v3/accounts/{{AccountID}}/homescreen
+token-auth: {{authToken}}
+
+# 4. Send requests below to get thumbnails and interact with your devices
+###
+# @name doorbell
+
+@doorbellThumb =  {{ homescreen.response.body.doorbells[0].thumbnail }}
+
+GET {{tiered-hostname}}{{ doorbellThumb }}
+token-auth: {{authToken}}
+
+###
+# @name Lake
+@lakeThumb =  {{ homescreen.response.body.cameras[?(@.name=='Lake' )].thumbnail }}
+
+GET {{tiered-hostname}}{{ lakeThumb }}
+token-auth: {{authToken}}
+
+###
+# @name Stairs
+@stairsThumb =  {{ homescreen.response.body.cameras[?(@.name=='Stairs' )].thumbnail }}
+
+GET {{tiered-hostname}}{{ stairsThumb }}
+token-auth: {{authToken}}
+
+###
+# @name South
+@southThumb =  {{ homescreen.response.body.cameras[?(@.name=='South' )].thumbnail }}
+
+GET {{tiered-hostname}}{{ southThumb }}
+token-auth: {{authToken}}
+
+###
+# @name Upstairs
+@upstairsThumb =  {{ homescreen.response.body.owls[?(@.name=='Upstairs' )].thumbnail }}
+
+GET {{tiered-hostname}}{{ upstairsThumb }}
+token-auth: {{authToken}}
+
+###
+# @name Downstairs
+@downstairsThumb =  {{ homescreen.response.body.owls[?(@.name=='Downstairs' )].thumbnail }}
+
+GET {{tiered-hostname}}{{ downstairsThumb }}
+token-auth: {{authToken}}
